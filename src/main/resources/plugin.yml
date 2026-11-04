@@ -1,0 +1,13 @@
+name: GlidePlugin
+version: 1.0
+main: de.tt.glide.GlidePlugin
+api-version: "1.21"
+description: Gleiten ab 18 Bloecken Hoehe, wie bei Craft Attack 14
+commands:
+  glide:
+    description: Gleiten ein- oder ausschalten
+    usage: /glide
+permissions:
+  glide.use:
+    description: Erlaubt /glide
+    default: true
