@@ -3,8 +3,8 @@
 Paper-Plugin (1.21.x): Gleiten wie bei Craft Attack 14. Mit `/glide` schaltest du das Gleiten ein oder aus.
 Gleiten startet erst, wenn du mindestens 18 Blöcke über dem Boden bist (einstellbar in `config.yml`).
 
-- **Schleichen** (1x) beendet das Gleiten.
-- **2x schnell Schleichen** startet es wieder (solange du in der Luft bist).
+- **Schleichen** beendet das Gleiten.
+- **Nochmal Schleichen** startet es wieder (solange du in der Luft bist, auch unter 18 Blöcken).
 - **Bodenberührung** beendet das Gleiten ebenfalls; danach startet es in der Höhe wieder automatisch.
 
 ## Befehl und Rechte
@@ -17,7 +17,6 @@ Gleiten startet erst, wenn du mindestens 18 Blöcke über dem Boden bist (einste
 
 ```yaml
 min-height: 18.0       # Mindesthöhe über dem Boden in Blöcken
-double-sneak-ms: 400   # Zeitfenster für 2x Schleichen
 ```
 
 ## Bauen

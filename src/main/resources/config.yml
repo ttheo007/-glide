@@ -1,5 +1,2 @@
 # Mindesthoehe ueber dem Boden (in Bloecken), ab der Gleiten startet
 min-height: 18.0
-
-# Zeitfenster (in Millisekunden) fuer 2x Schleichen, um das Gleiten wieder zu starten
-double-sneak-ms: 400

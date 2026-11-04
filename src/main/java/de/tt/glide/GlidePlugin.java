@@ -14,9 +14,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -24,19 +22,17 @@ public class GlidePlugin extends JavaPlugin implements Listener {
 
     /** Spieler, die /glide eingeschaltet haben */
     private final Set<UUID> enabled = new HashSet<>();
-    /** Spieler, die per Schleichen das Gleiten beendet haben (bis Landung oder Doppel-Schleichen) */
+    /** Spieler, die per Schleichen das Gleiten beendet haben (bis zum naechsten Schleichen oder Landung) */
     private final Set<UUID> paused = new HashSet<>();
-    /** Zeitpunkt des letzten Schleichen-Starts, fuer das Doppel-Schleichen */
-    private final Map<UUID, Long> lastSneak = new HashMap<>();
+    /** Spieler, die per Schleichen wieder gestartet haben: duerfen auch unter der Mindesthoehe gleiten */
+    private final Set<UUID> manual = new HashSet<>();
 
     private double minHeight;
-    private long doubleSneakMs;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         minHeight = getConfig().getDouble("min-height", 18.0);
-        doubleSneakMs = getConfig().getLong("double-sneak-ms", 400L);
         getServer().getPluginManager().registerEvents(this, this);
 
         getServer().getScheduler().runTaskTimer(this, () -> {
@@ -47,11 +43,12 @@ public class GlidePlugin extends JavaPlugin implements Listener {
                 // Boden beruehrt (oder Wasser/Fliegen): Gleiten endet, Pause wird zurueckgesetzt
                 if (p.isOnGround() || p.isInWater() || p.isFlying()) {
                     paused.remove(id);
+                    manual.remove(id);
                     if (p.isGliding()) p.setGliding(false);
                     continue;
                 }
 
-                boolean high = heightAboveGround(p) >= minHeight;
+                boolean high = manual.contains(id) || heightAboveGround(p) >= minHeight;
                 if (paused.contains(id)) {
                     if (p.isGliding()) p.setGliding(false);
                 } else if (high && !p.isGliding()) {
@@ -75,13 +72,13 @@ public class GlidePlugin extends JavaPlugin implements Listener {
         UUID id = p.getUniqueId();
         if (enabled.remove(id)) {
             paused.remove(id);
-            lastSneak.remove(id);
+            manual.remove(id);
             p.setGliding(false);
             p.sendMessage("§eGleiten §causgeschaltet§e.");
         } else {
             enabled.add(id);
             p.sendMessage("§eGleiten §aeingeschaltet§e. Start ab " + (int) minHeight
-                    + " Bloecken Hoehe. §7Schleichen beendet das Gleiten, 2x Schleichen startet es wieder.");
+                    + " Bloecken Hoehe. §7Schleichen beendet das Gleiten, nochmal Schleichen startet es wieder.");
         }
         return true;
     }
@@ -91,22 +88,18 @@ public class GlidePlugin extends JavaPlugin implements Listener {
         Player p = e.getPlayer();
         UUID id = p.getUniqueId();
         if (!enabled.contains(id) || !e.isSneaking()) return;
+        if (p.isOnGround() || p.isInWater() || p.isFlying()) return;
 
-        long now = System.currentTimeMillis();
-        Long last = lastSneak.put(id, now);
-        boolean doubleSneak = last != null && now - last <= doubleSneakMs;
-
-        if (doubleSneak) {
-            // Zweimal schnell geschlichen: Gleiten wieder erlauben (wenn hoch genug)
-            lastSneak.remove(id);
-            if (paused.remove(id)) {
-                p.sendMessage("§eGleiten §aan§e.");
-            }
-        } else if (p.isGliding()) {
-            // Einmal schleichen waehrend des Gleitens: beenden
+        if (p.isGliding()) {
+            // Schleichen waehrend des Gleitens: beenden
             paused.add(id);
+            manual.remove(id);
             p.setGliding(false);
-            p.sendMessage("§eGleiten §caus§e. 2x Schleichen = wieder an.");
+            p.sendMessage("§eGleiten §caus§e. Nochmal Schleichen = wieder an.");
+        } else if (paused.remove(id)) {
+            // Naechstes Schleichen in der Luft: wieder starten
+            manual.add(id);
+            p.sendMessage("§eGleiten §aan§e.");
         }
     }
 
@@ -125,7 +118,7 @@ public class GlidePlugin extends JavaPlugin implements Listener {
         UUID id = e.getPlayer().getUniqueId();
         enabled.remove(id);
         paused.remove(id);
-        lastSneak.remove(id);
+        manual.remove(id);
     }
 
     private double heightAboveGround(Player p) {
